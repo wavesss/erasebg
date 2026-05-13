@@ -2,14 +2,20 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI, UploadFile, Response, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from rembg import remove, new_session
-import io
 
 _session = None
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     global _session
-    _session = new_session("birefnet-general")
+    try:
+        print("Loading birefnet-general model...")
+        _session = new_session("birefnet-general")
+        print("Model loaded successfully.")
+    except Exception as e:
+        print(f"ERROR loading birefnet-general: {e}")
+        print("Falling back to u2net")
+        _session = new_session("u2net")
     yield
 
 app = FastAPI(title="listify-rembg", version="1.0.0", lifespan=lifespan)
@@ -41,7 +47,8 @@ async def remove_background(file: UploadFile) -> Response:
         raise HTTPException(status_code=413, detail="File too large. Max 10MB.")
 
     try:
-        output = remove(contents, session=_session)
+        session = _session if _session is not None else new_session("birefnet-general")
+        output = remove(contents, session=session)
     except Exception:
         raise HTTPException(status_code=500, detail="Processing failed")
 
