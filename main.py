@@ -1,9 +1,18 @@
+from contextlib import asynccontextmanager
 from fastapi import FastAPI, UploadFile, Response, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from rembg import remove
+from rembg import remove, new_session
 import io
 
-app = FastAPI(title="listify-rembg", version="1.0.0")
+_session = None
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    global _session
+    _session = new_session("birefnet-general")
+    yield
+
+app = FastAPI(title="listify-rembg", version="1.0.0", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
@@ -32,7 +41,7 @@ async def remove_background(file: UploadFile) -> Response:
         raise HTTPException(status_code=413, detail="File too large. Max 10MB.")
 
     try:
-        output = remove(contents)
+        output = remove(contents, session=_session)
     except Exception:
         raise HTTPException(status_code=500, detail="Processing failed")
 
