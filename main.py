@@ -9,11 +9,11 @@ _session = None
 async def lifespan(app: FastAPI):
     global _session
     try:
-        print("Loading birefnet-general model...")
-        _session = new_session("birefnet-general")
+        print("Loading isnet-general-use model...")
+        _session = new_session("isnet-general-use")
         print("Model loaded successfully.")
     except Exception as e:
-        print(f"ERROR loading birefnet-general: {e}")
+        print(f"ERROR loading isnet-general-use: {e}")
         print("Falling back to u2net")
         _session = new_session("u2net")
     yield
@@ -47,7 +47,7 @@ async def remove_background(file: UploadFile) -> Response:
         raise HTTPException(status_code=413, detail="File too large. Max 10MB.")
 
     try:
-        session = _session if _session is not None else new_session("birefnet-general")
+        session = _session if _session is not None else new_session("isnet-general-use")
         output = remove(contents, session=session)
     except Exception:
         raise HTTPException(status_code=500, detail="Processing failed")
